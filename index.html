@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LANCE RURAL AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101b17;color:#edf5ef;font-family:Arial,sans-serif}
+header{padding:25px 6%;background:#172820;border-bottom:1px solid #35513e}
+.logo{font-size:25px;font-weight:bold;color:#a8d69b}
+header p{color:#b8c9bb;margin-bottom:0}
+main{max-width:1050px;margin:30px auto;padding:0 18px}
+.card{background:#1a2b22;border:1px solid #36513e;border-radius:14px;padding:22px;margin-bottom:20px}
+h2{color:#b6dba9;margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-size:13px;color:#c6d6c9;margin-bottom:6px}
+input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid #506858;background:#101b17;color:white}
+textarea{min-height:90px;resize:vertical}
+.field{margin-bottom:14px}
+button{border:0;border-radius:9px;padding:14px 20px;background:#79ad69;color:#102016;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+#resultado{white-space:pre-wrap;line-height:1.6;background:#101b17;border-radius:10px;padding:18px;min-height:80px}
+.status{color:#b6dba9;font-size:13px}
+footer{text-align:center;color:#91a596;padding:25px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🌱 LANCE RURAL AI</div>
+  <p>Inteligência artificial para análise de oportunidades rurais</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Cadastro da propriedade</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Nome ou identificação do imóvel</label>
+        <input id="imovel" placeholder="Ex.: Fazenda Boa Vista">
+      </div>
+      <div class="field">
+        <label>Estado (UF)</label>
+        <input id="estado" placeholder="Ex.: GO">
+      </div>
+      <div class="field">
+        <label>Município</label>
+        <input id="municipio" placeholder="Nome do município">
+      </div>
+      <div class="field">
+        <label>Área do imóvel (hectares)</label>
+        <input id="area" type="number" step="0.01" placeholder="Ex.: 250">
+      </div>
+      <div class="field">
+        <label>Número do CAR</label>
+        <input id="car" placeholder="Número, se disponível">
+      </div>
+      <div class="field">
+        <label>Matrícula do imóvel</label>
+        <input id="matricula" placeholder="Número da matrícula">
+      </div>
+      <div class="field">
+        <label>Valor do lance (R$)</label>
+        <input id="lance" type="number" step="0.01" placeholder="Ex.: 500000">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Documentos do leilão</h2>
+    <div class="field">
+      <label>Selecione o edital em PDF</label>
+      <input id="edital" type="file" accept=".pdf,application/pdf">
+      <p class="status">Envie o edital para a IA examinar as condições e os riscos documentais.</p>
+    </div>
+    <div class="field">
+      <label>Observações adicionais</label>
+      <textarea id="texto" placeholder="Informações que você já possui sobre o imóvel..."></textarea>
+    </div>
+    <button id="analisar" onclick="analisarImovel()">ANALISAR COM INTELIGÊNCIA ARTIFICIAL</button>
+    <p class="status" id="status"></p>
+  </section>
+
+  <section class="card">
+    <h2>Relatório da análise</h2>
+    <div id="resultado">Aguardando o cadastro e o envio dos documentos.</div>
+  </section>
+</main>
+
+<footer>LANCE RURAL AI · Análise preliminar. Confirme documentos e informações com profissionais habilitados.</footer>
+
+<script>
+async function analisarImovel(){
+  const botao=document.getElementById("analisar");
+  const status=document.getElementById("status");
+  const resultado=document.getElementById("resultado");
+  const arquivo=document.getElementById("edital").files[0];
+
+  if(!arquivo && !document.getElementById("texto").value.trim()){
+    alert("Selecione um edital PDF ou preencha as observações.");
+    return;
+  }
+
+  if(arquivo && arquivo.type!=="application/pdf"){
+    alert("Selecione um arquivo PDF válido.");
+    return;
+  }
+
+  const dados=new FormData();
+  ["imovel","estado","municipio","area","car","matricula","lance","texto"].forEach(id=>{
+    dados.append(id,document.getElementById(id).value);
+  });
+
+  if(arquivo) dados.append("edital",arquivo);
+
+  botao.disabled=true;
+  status.textContent="A IA está examinando os dados. Aguarde...";
+  resultado.textContent="Análise em andamento...";
+
+  try{
+    const resposta=await fetch("/api/analyze",{
+      method:"POST",
+      body:dados
+    });
+
+    const json=await resposta.json();
+
+    if(!resposta.ok) throw new Error(json.erro || "Falha na análise.");
+
+    resultado.textContent=json.analise;
+    status.textContent="Análise concluída.";
+  }catch(erro){
+    resultado.textContent="Não foi possível concluir: "+erro.message;
+    status.textContent="Verifique o servidor e a configuração da API.";
+  }finally{
+    botao.disabled=false;
+  }
+}
+</script>
+</body>
+</html>

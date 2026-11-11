@@ -16,8 +16,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-app.use(express.static(path.join(__dirname, "public")));
-
+app.use(express.static(__dirname));
 app.get("/api/status", (req, res) => {
   res.json({
     funcionando: true,

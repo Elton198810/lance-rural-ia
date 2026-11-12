@@ -12,6 +12,7 @@ const PORTA = process.env.PORT || 3000;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MODELO = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
@@ -24,14 +25,15 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-// PÁGINAS DO SITE
-app.get("/", (req, res) =>
-  res.sendFile(path.join(__dirname, "index.html"))
-);
+// PÁGINA PRINCIPAL
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
-app.get("/vendas.html", (req, res) =>
-  res.sendFile(path.join(__dirname, "vendas.html"))
-);
+// PÁGINA DE VENDAS
+app.get("/vendas.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "vendas.html"));
+});
 
 // STATUS DO SERVIDOR
 app.get("/api/status", (req, res) => {

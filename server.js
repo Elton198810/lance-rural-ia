@@ -8,11 +8,11 @@ const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 app.use(express.json());
+
 const PORTA = process.env.PORT || 3000;
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MODELO = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
-
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -20,11 +20,13 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
+
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SECRET_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
   : null;
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }
@@ -284,6 +286,8 @@ Responda em português brasileiro.
     return res.status(500).json({
       erro: "Falha ao analisar o documento: " + erro.message
     });
+  }
+});
 
 // WEBHOOK DA KIWIFY
 app.post("/api/kiwify-webhook", async (req, res) => {
@@ -416,10 +420,6 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     });
   }
 });
-      
-    
-  
-
 
 // INICIALIZAÇÃO DO SERVIDOR
 app.listen(PORTA, () => {

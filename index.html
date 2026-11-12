@@ -4,7 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LANCE RURAL AI</title>
+<title>LANCE RURAL IA</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#101b17;color:#edf5ef;font-family:Arial,sans-serif}
@@ -16,25 +17,38 @@ main{max-width:1050px;margin:30px auto;padding:0 18px}
 h2{color:#b6dba9;margin-top:0}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 label{display:block;font-size:13px;color:#c6d6c9;margin-bottom:6px}
-input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid #506858;background:#101b17;color:white}
+input,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #506858;background:#101b17;color:white}
 textarea{min-height:90px;resize:vertical}
 .field{margin-bottom:14px}
-button{border:0;border-radius:9px;padding:14px 20px;background:#79ad69;color:#102016;font-weight:bold;cursor:pointer}
+button{border:0;border-radius:9px;padding:14px 20px;background:#79ad69;color:#102016;font-weight:bold;cursor:pointer;margin:5px 5px 5px 0}
 button:disabled{opacity:.5;cursor:wait}
-#resultado{white-space:pre-wrap;line-height:1.6;background:#101b17;border-radius:10px;padding:18px;min-height:80px}
+#resultado{white-space:pre-wrap;line-height:1.6;background:#101b17;border-radius:10px;padding:18px;min-height:80px;overflow-wrap:anywhere}
 .status{color:#b6dba9;font-size:13px}
 footer{text-align:center;color:#91a596;padding:25px}
+#baixarPdf{display:none;background:#b6dba9}
 @media(max-width:650px){.grid{grid-template-columns:1fr}}
+
+@media print{
+ body{background:white;color:black}
+ header{background:white;color:black;border-bottom:1px solid #ccc}
+ header p,.logo,h2{color:black}
+ main{max-width:100%;margin:10px;padding:0}
+ .card{background:white;border:0;padding:8px;color:black}
+ #cadastro,#documentos,footer,.acoes,#status{display:none!important}
+ #resultado{background:white;color:black;padding:0;white-space:pre-wrap}
+ #relatorio{display:block!important}
+}
 </style>
 </head>
+
 <body>
 <header>
-  <div class="logo">🌱 LANCE RURAL AI</div>
+  <div class="logo">🌱 LANCE RURAL IA</div>
   <p>Inteligência artificial para análise de oportunidades rurais</p>
 </header>
 
 <main>
-  <section class="card">
+  <section class="card" id="cadastro">
     <h2>Cadastro da propriedade</h2>
     <div class="grid">
       <div class="field">
@@ -68,7 +82,7 @@ footer{text-align:center;color:#91a596;padding:25px}
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="documentos">
     <h2>Documentos do leilão</h2>
     <div class="field">
       <label>Selecione o edital em PDF</label>
@@ -79,17 +93,24 @@ footer{text-align:center;color:#91a596;padding:25px}
       <label>Observações adicionais</label>
       <textarea id="texto" placeholder="Informações que você já possui sobre o imóvel..."></textarea>
     </div>
-    <button id="analisar" onclick="analisarImovel()">ANALISAR COM INTELIGÊNCIA ARTIFICIAL</button>
+    <div class="acoes">
+      <button id="analisar" onclick="analisarImovel()">ANALISAR COM INTELIGÊNCIA ARTIFICIAL</button>
+    </div>
     <p class="status" id="status"></p>
   </section>
 
-  <section class="card">
+  <section class="card" id="relatorio">
     <h2>Relatório da análise</h2>
     <div id="resultado">Aguardando o cadastro e o envio dos documentos.</div>
+    <div class="acoes">
+      <button id="baixarPdf" onclick="gerarPDF()">BAIXAR RELATÓRIO EM PDF</button>
+    </div>
   </section>
 </main>
 
-<footer>LANCE RURAL AI · Análise preliminar. Confirme documentos e informações com profissionais habilitados.</footer>
+<footer>
+LANCE RURAL IA · Análise preliminar. Confirme documentos e informações com profissionais habilitados.
+</footer>
 
 <script>
 async function analisarImovel(){
@@ -109,6 +130,7 @@ async function analisarImovel(){
   }
 
   const dados=new FormData();
+
   ["imovel","estado","municipio","area","car","matricula","lance","texto"].forEach(id=>{
     dados.append(id,document.getElementById(id).value);
   });
@@ -116,6 +138,7 @@ async function analisarImovel(){
   if(arquivo) dados.append("edital",arquivo);
 
   botao.disabled=true;
+  document.getElementById("baixarPdf").style.display="none";
   status.textContent="A IA está examinando os dados. Aguarde...";
   resultado.textContent="Análise em andamento...";
 
@@ -128,15 +151,29 @@ async function analisarImovel(){
     const json=await resposta.json();
 
     if(!resposta.ok) throw new Error(json.erro || "Falha na análise.");
+    if(!json.analise) throw new Error("O servidor não retornou o relatório.");
 
     resultado.textContent=json.analise;
     status.textContent="Análise concluída.";
+    document.getElementById("baixarPdf").style.display="inline-block";
+
   }catch(erro){
     resultado.textContent="Não foi possível concluir: "+erro.message;
     status.textContent="Verifique o servidor e a configuração da API.";
   }finally{
     botao.disabled=false;
   }
+}
+
+function gerarPDF(){
+  const resultado=document.getElementById("resultado").textContent;
+
+  if(!resultado || resultado.includes("Aguardando") || resultado.includes("Análise em andamento")){
+    alert("Primeiro realize uma análise.");
+    return;
+  }
+
+  window.print();
 }
 </script>
 </body>

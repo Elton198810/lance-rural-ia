@@ -20,7 +20,11 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 
+const supabaseAdmin = SUPABASE_URL && SUPABASE_SECRET_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
+  : null;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }
@@ -280,13 +284,8 @@ Responda em português brasileiro.
     return res.status(500).json({
       erro: "Falha ao analisar o documento: " + erro.message
     });
-  }
-});
 
 // WEBHOOK DA KIWIFY
-app.get("/api/kiwify-webhook", (req, res) => {
-  res.json({ ativo: true, mensagem: "Webhook pronto para receber eventos." });
-});
 app.post("/api/kiwify-webhook", async (req, res) => {
   try {
     const evento = req.body;
@@ -298,13 +297,17 @@ app.post("/api/kiwify-webhook", async (req, res) => {
       });
     }
 
-    const pedido = evento.order_id || null;
-    const status = evento.order_status || "";
-    const tipoEvento = evento.webhook_event_type || "";
-    const email = evento.Customer?.email || null;
-    const produto = evento.Product?.product_name || "";
+    if (!supabaseAdmin) {
+      throw new Error("Supabase Admin não configurado.");
+    }
 
-    console.log("WEBHOOK KIWIFY RECEBIDO:", {
+    const pedido = evento.order_id || null;
+    const status = String(evento.order_status || "").toLowerCase();
+    const tipoEvento = String(evento.webhook_event_type || "").toLowerCase();
+    const email = evento.Customer?.email?.trim().toLowerCase();
+    const produto = String(evento.Product?.product_name || "");
+
+    console.log("WEBHOOK KIWIFY:", {
       pedido,
       status,
       tipoEvento,
@@ -312,18 +315,107 @@ app.post("/api/kiwify-webhook", async (req, res) => {
       produto
     });
 
+    if (!email) {
+      return res.status(400).json({
+        recebido: false,
+        erro: "E-mail do comprador não encontrado."
+      });
+    }
+
+    const cancelado =
+      status.includes("refund") ||
+      status.includes("chargeback") ||
+      status.includes("cancel") ||
+      tipoEvento.includes("refund") ||
+      tipoEvento.includes("chargeback") ||
+      tipoEvento.includes("cancel");
+
+    const aprovado =
+      status.includes("paid") ||
+      status.includes("approved") ||
+      status.includes("active") ||
+      tipoEvento.includes("approved") ||
+      tipoEvento.includes("renewed");
+
+    if (!cancelado && !aprovado) {
+      return res.status(200).json({
+        recebido: true,
+        mensagem: "Evento recebido, sem alteração de assinatura."
+      });
+    }
+
+    const { data: usuarios, error: erroUsuarios } =
+      await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000
+      });
+
+    if (erroUsuarios) throw erroUsuarios;
+
+    const usuario = usuarios.users.find(
+      u => u.email?.toLowerCase() === email
+    );
+
+    if (!usuario) {
+      return res.status(200).json({
+        recebido: true,
+        mensagem: "Comprador ainda não possui conta no LANCE RURAL IA."
+      });
+    }
+
+    const premium = produto.toLowerCase().includes("premium");
+    const plano = premium ? "Premium" : "Essencial";
+    const limite = premium ? 30 : 10;
+
+    const { data: assinatura, error: erroBusca } =
+      await supabaseAdmin
+        .from("subscriptions")
+        .select("user_id")
+        .eq("user_id", usuario.id)
+        .maybeSingle();
+
+    if (erroBusca) throw erroBusca;
+
+    const dados = {
+      user_id: usuario.id,
+      plan: cancelado ? plano : plano,
+      status: cancelado ? "canceled" : "active",
+      analyses_limit: limite,
+      period_start: new Date().toISOString(),
+      period_end: cancelado
+        ? new Date().toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      provider: "kiwify",
+      last_transaction_id: pedido
+    };
+
+    const resultado = assinatura
+      ? await supabaseAdmin
+          .from("subscriptions")
+          .update(dados)
+          .eq("user_id", usuario.id)
+      : await supabaseAdmin
+          .from("subscriptions")
+          .insert(dados);
+
+    if (resultado.error) throw resultado.error;
+
     return res.status(200).json({
       recebido: true,
-      pedido,
-      status,
-      tipoEvento
+      assinatura_atualizada: true,
+      plano,
+      status: dados.status
     });
 
   } catch (erro) {
-    console.error("Erro no webhook Kiwify:", erro.message);
+    console.error("ERRO WEBHOOK KIWIFY:", erro);
 
     return res.status(500).json({
       recebido: false,
+      erro: "Falha ao processar webhook."
+    });
+  }
+});
       erro: "Falha ao processar webhook."
     });
   }

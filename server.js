@@ -416,10 +416,10 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     });
   }
 });
-      erro: "Falha ao processar webhook."
-    });
-  }
-});
+      
+    
+  
+
 
 // INICIALIZAÇÃO DO SERVIDOR
 app.listen(PORTA, () => {

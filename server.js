@@ -45,6 +45,64 @@ app.get("/api/status", (req, res) => {
 // TESTE DE CONEXÃO COM SUPABASE
 app.get("/api/supabase-status", async (req, res) => {
   if (!supabase) {
+    return res.status(503).json({
+      conectado: false,
+      erro: "Supabase não foi configurado no servidor."
+    });
+  }
+
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      console.error("Erro retornado pelo Supabase:", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+
+      return res.status(502).json({
+        conectado: false,
+        diagnostico: {
+          tipo: "RESPOSTA_SUPABASE",
+          codigo: error.code || null,
+          mensagem: error.message || null,
+          detalhes: error.details || null,
+          dica: error.hint || null
+        }
+      });
+    }
+
+    return res.json({
+      conectado: true,
+      mensagem: "Supabase conectado com sucesso."
+    });
+
+  } catch (erro) {
+    const diagnostico = {
+      nome: erro?.name || null,
+      mensagem: erro?.message || null,
+      causaNome: erro?.cause?.name || null,
+      causaMensagem: erro?.cause?.message || null,
+      codigo: erro?.cause?.code || erro?.code || null
+    };
+
+    console.error(
+      "Falha detalhada na conexão Supabase:",
+      JSON.stringify(diagnostico)
+    );
+
+    return res.status(502).json({
+      conectado: false,
+      diagnostico
+    });
+  }
+});
+  if (!supabase) {
     return res.status(500).json({
       conectado: false,
       erro: "Variáveis do Supabase não configuradas."

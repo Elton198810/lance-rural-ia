@@ -7,6 +7,7 @@ const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+app.use(express.json());
 const PORTA = process.env.PORT || 3000;
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -278,6 +279,49 @@ Responda em português brasileiro.
 
     return res.status(500).json({
       erro: "Falha ao analisar o documento: " + erro.message
+    });
+  }
+});
+
+// WEBHOOK DA KIWIFY
+app.post("/api/kiwify-webhook", async (req, res) => {
+  try {
+    const evento = req.body;
+
+    if (!evento || typeof evento !== "object") {
+      return res.status(400).json({
+        recebido: false,
+        erro: "Dados inválidos."
+      });
+    }
+
+    const pedido = evento.order_id || null;
+    const status = evento.order_status || "";
+    const tipoEvento = evento.webhook_event_type || "";
+    const email = evento.Customer?.email || null;
+    const produto = evento.Product?.product_name || "";
+
+    console.log("WEBHOOK KIWIFY RECEBIDO:", {
+      pedido,
+      status,
+      tipoEvento,
+      email,
+      produto
+    });
+
+    return res.status(200).json({
+      recebido: true,
+      pedido,
+      status,
+      tipoEvento
+    });
+
+  } catch (erro) {
+    console.error("Erro no webhook Kiwify:", erro.message);
+
+    return res.status(500).json({
+      recebido: false,
+      erro: "Falha ao processar webhook."
     });
   }
 });

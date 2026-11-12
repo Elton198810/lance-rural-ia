@@ -24,6 +24,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
+// PÁGINAS DO SITE
 app.get("/", (req, res) =>
   res.sendFile(path.join(__dirname, "index.html"))
 );
@@ -32,6 +33,7 @@ app.get("/vendas.html", (req, res) =>
   res.sendFile(path.join(__dirname, "vendas.html"))
 );
 
+// STATUS DO SERVIDOR
 app.get("/api/status", (req, res) => {
   res.json({
     funcionando: true,
@@ -42,7 +44,7 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// TESTE DE CONEXÃO COM SUPABASE
+// TESTE E DIAGNÓSTICO DO SUPABASE
 app.get("/api/supabase-status", async (req, res) => {
   if (!supabase) {
     return res.status(503).json({
@@ -58,22 +60,22 @@ app.get("/api/supabase-status", async (req, res) => {
       .limit(1);
 
     if (error) {
-      console.error("Erro retornado pelo Supabase:", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
+      const diagnostico = {
+        tipo: "RESPOSTA_SUPABASE",
+        codigo: error.code || null,
+        mensagem: error.message || null,
+        detalhes: error.details || null,
+        dica: error.hint || null
+      };
+
+      console.error(
+        "Erro retornado pelo Supabase:",
+        JSON.stringify(diagnostico)
+      );
 
       return res.status(502).json({
         conectado: false,
-        diagnostico: {
-          tipo: "RESPOSTA_SUPABASE",
-          codigo: error.code || null,
-          mensagem: error.message || null,
-          detalhes: error.details || null,
-          dica: error.hint || null
-        }
+        diagnostico
       });
     }
 
@@ -102,36 +104,8 @@ app.get("/api/supabase-status", async (req, res) => {
     });
   }
 });
-  if (!supabase) {
-    return res.status(500).json({
-      conectado: false,
-      erro: "Variáveis do Supabase não configuradas."
-    });
-  }
 
-  try {
-    const { error } = await supabase
-      .from("profiles")
-      .select("id")
-      .limit(1);
-
-    if (error) throw error;
-
-    return res.json({
-      conectado: true,
-      mensagem: "Comunicação com Supabase funcionando."
-    });
-
-  } catch (erro) {
-    console.error("Erro Supabase:", erro.message);
-
-    return res.status(500).json({
-      conectado: false,
-      erro: "Falha na comunicação com Supabase."
-    });
-  }
-});
-
+// EXTRAÇÃO DE TEXTO DOS PDFS
 async function extrairTextoPDF(buffer) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
@@ -166,6 +140,7 @@ async function extrairTextoPDF(buffer) {
   return textoCompleto.trim().slice(0, 9000);
 }
 
+// ANÁLISE DOCUMENTAL COM GROQ
 app.post("/api/analyze", upload.single("edital"), async (req, res) => {
   try {
     if (!GROQ_API_KEY) {
@@ -276,7 +251,10 @@ Responda em português brasileiro.
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      console.error("Erro Groq:", dados.error?.message || resposta.status);
+      console.error(
+        "Erro Groq:",
+        dados.error?.message || resposta.status
+      );
 
       return res.status(502).json({
         erro: "A IA não respondeu. Verifique o modelo e os limites da conta Groq."
@@ -302,6 +280,7 @@ Responda em português brasileiro.
   }
 });
 
+// INICIALIZAÇÃO DO SERVIDOR
 app.listen(PORTA, () => {
   console.log("====================================");
   console.log("          LANCE RURAL IA");

@@ -284,6 +284,9 @@ Responda em português brasileiro.
 });
 
 // WEBHOOK DA KIWIFY
+app.get("/api/kiwify-webhook", (req, res) => {
+  res.json({ ativo: true, mensagem: "Webhook pronto para receber eventos." });
+});
 app.post("/api/kiwify-webhook", async (req, res) => {
   try {
     const evento = req.body;

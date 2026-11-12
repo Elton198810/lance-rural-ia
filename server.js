@@ -4,27 +4,74 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const PORTA = 3000;
+const PORTA = process.env.PORT || 3000;
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MODELO = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
-app.get("/vendas.html", (req, res) => res.sendFile(path.join(__dirname, "vendas.html")));
+app.get("/", (req, res) =>
+  res.sendFile(path.join(__dirname, "index.html"))
+);
+
+app.get("/vendas.html", (req, res) =>
+  res.sendFile(path.join(__dirname, "vendas.html"))
+);
+
 app.get("/api/status", (req, res) => {
   res.json({
     funcionando: true,
     provedor: "Groq",
     modelo: MODELO,
-    chaveConfigurada: Boolean(GROQ_API_KEY)
+    chaveConfigurada: Boolean(GROQ_API_KEY),
+    supabaseConfigurado: Boolean(supabase)
   });
+});
+
+// TESTE DE CONEXÃO COM SUPABASE
+app.get("/api/supabase-status", async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({
+      conectado: false,
+      erro: "Variáveis do Supabase não configuradas."
+    });
+  }
+
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .select("id")
+      .limit(1);
+
+    if (error) throw error;
+
+    return res.json({
+      conectado: true,
+      mensagem: "Comunicação com Supabase funcionando."
+    });
+
+  } catch (erro) {
+    console.error("Erro Supabase:", erro.message);
+
+    return res.status(500).json({
+      conectado: false,
+      erro: "Falha na comunicação com Supabase."
+    });
+  }
 });
 
 async function extrairTextoPDF(buffer) {
@@ -54,8 +101,8 @@ async function extrairTextoPDF(buffer) {
     }
   } finally {
     if (documento && typeof documento.cleanup === "function") {
-    await documento.cleanup();
-}
+      await documento.cleanup();
+    }
   }
 
   return textoCompleto.trim().slice(0, 9000);
@@ -65,7 +112,7 @@ app.post("/api/analyze", upload.single("edital"), async (req, res) => {
   try {
     if (!GROQ_API_KEY) {
       return res.status(500).json({
-        erro: "Chave GROQ_API_KEY não encontrada no arquivo .env."
+        erro: "Chave GROQ_API_KEY não encontrada no ambiente."
       });
     }
 
@@ -172,6 +219,7 @@ Responda em português brasileiro.
 
     if (!resposta.ok) {
       console.error("Erro Groq:", dados.error?.message || resposta.status);
+
       return res.status(502).json({
         erro: "A IA não respondeu. Verifique o modelo e os limites da conta Groq."
       });
@@ -200,9 +248,10 @@ app.listen(PORTA, () => {
   console.log("====================================");
   console.log("          LANCE RURAL IA");
   console.log("====================================");
-  console.log("Servidor: http://localhost:" + PORTA);
+  console.log("Servidor iniciado na porta: " + PORTA);
   console.log("Provedor: Groq");
   console.log("Modelo: " + MODELO);
-  console.log("Chave configurada: " + Boolean(GROQ_API_KEY));
+  console.log("Chave Groq configurada: " + Boolean(GROQ_API_KEY));
+  console.log("Supabase configurado: " + Boolean(supabase));
   console.log("====================================");
 });

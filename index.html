@@ -112,15 +112,19 @@ button:disabled{
   font-size:13px;
 }
 
+#baixarPdf{
+  display:none;
+  background:#b6dba9;
+}
+
+#dadosRelatorio{
+  display:none;
+}
+
 footer{
   text-align:center;
   color:#91a596;
   padding:25px;
-}
-
-#baixarPdf{
-  display:none;
-  background:#b6dba9;
 }
 
 @media(max-width:650px){
@@ -129,39 +133,36 @@ footer{
 
 @page{
   size:A4;
-  margin:18mm;
+  margin:18mm 16mm;
 }
 
 @media print{
   body{
     background:white!important;
-    color:black!important;
+    color:#222!important;
     font-family:Arial,sans-serif;
+    font-size:11pt;
   }
 
   header{
     background:white!important;
-    color:black!important;
-    border-bottom:1px solid #ccc;
-    padding:10px 0;
+    border-bottom:2px solid #35513e;
+    padding:0 0 12px;
   }
 
-  .logo,header p,h2{
-    color:black!important;
+  .logo{
+    color:#234b32!important;
+    font-size:20pt;
+  }
+
+  header p{
+    color:#444!important;
   }
 
   main{
     max-width:100%;
-    margin:10px 0;
+    margin:15px 0;
     padding:0;
-  }
-
-  .card{
-    background:white!important;
-    border:0;
-    padding:8px 0;
-    color:black!important;
-    box-shadow:none;
   }
 
   #cadastro,
@@ -174,19 +175,42 @@ footer{
 
   #relatorio{
     display:block!important;
-    page-break-inside:auto;
+    background:white!important;
+    border:0!important;
+    padding:0!important;
+    margin:0!important;
+  }
+
+  #relatorio h2{
+    color:#234b32!important;
+    font-size:17pt;
+    border-bottom:1px solid #aaa;
+    padding-bottom:8px;
+  }
+
+  #dadosRelatorio{
+    display:block!important;
+    color:#222!important;
+    margin:15px 0 22px;
+    padding:12px;
+    border:1px solid #bbb;
+    border-radius:5px;
+    line-height:1.7;
+    page-break-inside:avoid;
   }
 
   #resultado{
+    display:block!important;
     background:white!important;
-    color:black!important;
-    padding:0;
-    min-height:0;
+    color:#222!important;
+    padding:0!important;
+    min-height:0!important;
+    border-radius:0!important;
     white-space:pre-wrap;
-    overflow:visible;
+    overflow:visible!important;
     overflow-wrap:anywhere;
-    font-size:11pt;
-    line-height:1.5;
+    font-size:10.5pt;
+    line-height:1.55;
   }
 }
 </style>
@@ -201,91 +225,92 @@ footer{
 
 <main>
 
-  <section class="card" id="cadastro">
-    <h2>Cadastro da propriedade</h2>
+<section class="card" id="cadastro">
+  <h2>Cadastro da propriedade</h2>
 
-    <div class="grid">
-
-      <div class="field">
-        <label>Nome ou identificação do imóvel</label>
-        <input id="imovel" placeholder="Ex.: Fazenda Boa Vista">
-      </div>
-
-      <div class="field">
-        <label>Estado (UF)</label>
-        <input id="estado" placeholder="Ex.: GO">
-      </div>
-
-      <div class="field">
-        <label>Município</label>
-        <input id="municipio" placeholder="Nome do município">
-      </div>
-
-      <div class="field">
-        <label>Área do imóvel (hectares)</label>
-        <input id="area" type="number" step="0.01" placeholder="Ex.: 250">
-      </div>
-
-      <div class="field">
-        <label>Número do CAR</label>
-        <input id="car" placeholder="Número, se disponível">
-      </div>
-
-      <div class="field">
-        <label>Matrícula do imóvel</label>
-        <input id="matricula" placeholder="Número da matrícula">
-      </div>
-
-      <div class="field">
-        <label>Valor do lance (R$)</label>
-        <input id="lance" type="number" step="0.01" placeholder="Ex.: 500000">
-      </div>
-
-    </div>
-  </section>
-
-  <section class="card" id="documentos">
-
-    <h2>Documentos do leilão</h2>
+  <div class="grid">
 
     <div class="field">
-      <label>Selecione o edital em PDF</label>
-      <input id="edital" type="file" accept=".pdf,application/pdf">
-      <p class="status">
-        Envie o edital para a IA examinar as condições e os riscos documentais.
-      </p>
+      <label>Nome ou identificação do imóvel</label>
+      <input id="imovel" placeholder="Ex.: Fazenda Boa Vista">
     </div>
 
     <div class="field">
-      <label>Observações adicionais</label>
-      <textarea id="texto" placeholder="Informações que você já possui sobre o imóvel..."></textarea>
+      <label>Estado (UF)</label>
+      <input id="estado" placeholder="Ex.: GO">
     </div>
 
-    <div class="acoes">
-      <button id="analisar" onclick="analisarImovel()">
-        ANALISAR COM INTELIGÊNCIA ARTIFICIAL
-      </button>
+    <div class="field">
+      <label>Município</label>
+      <input id="municipio" placeholder="Nome do município">
     </div>
 
-    <p class="status" id="status"></p>
-
-  </section>
-
-  <section class="card" id="relatorio">
-
-    <h2>Relatório da análise</h2>
-
-    <div id="resultado">
-      Aguardando o cadastro e o envio dos documentos.
+    <div class="field">
+      <label>Área do imóvel (hectares)</label>
+      <input id="area" type="number" step="0.01" placeholder="Ex.: 250">
     </div>
 
-    <div class="acoes">
-      <button id="baixarPdf" onclick="gerarPDF()">
-        BAIXAR RELATÓRIO EM PDF
-      </button>
+    <div class="field">
+      <label>Número do CAR</label>
+      <input id="car" placeholder="Número, se disponível">
     </div>
 
-  </section>
+    <div class="field">
+      <label>Matrícula do imóvel</label>
+      <input id="matricula" placeholder="Número da matrícula">
+    </div>
+
+    <div class="field">
+      <label>Valor do lance (R$)</label>
+      <input id="lance" type="number" step="0.01" placeholder="Ex.: 500000">
+    </div>
+
+  </div>
+</section>
+
+<section class="card" id="documentos">
+  <h2>Documentos do leilão</h2>
+
+  <div class="field">
+    <label>Selecione o edital em PDF</label>
+    <input id="edital" type="file" accept=".pdf,application/pdf">
+
+    <p class="status">
+      Envie o edital para a IA examinar as condições e os riscos documentais.
+    </p>
+  </div>
+
+  <div class="field">
+    <label>Observações adicionais</label>
+    <textarea id="texto" placeholder="Informações que você já possui sobre o imóvel..."></textarea>
+  </div>
+
+  <div class="acoes">
+    <button id="analisar" onclick="analisarImovel()">
+      ANALISAR COM INTELIGÊNCIA ARTIFICIAL
+    </button>
+  </div>
+
+  <p class="status" id="status"></p>
+</section>
+
+<section class="card" id="relatorio">
+
+  <h2>Relatório da análise</h2>
+
+  <div id="dadosRelatorio"></div>
+
+  <div id="resultado">
+    Aguardando o cadastro e o envio dos documentos.
+  </div>
+
+  <div class="acoes">
+    <button id="baixarPdf" onclick="gerarPDF()">
+      BAIXAR RELATÓRIO EM PDF
+    </button>
+  </div>
+
+</section>
 
 </main>
 
@@ -295,14 +320,54 @@ footer{
 
 <script>
 
+let analiseConcluida = false;
+
+function obterValor(id){
+  return document.getElementById(id).value.trim();
+}
+
+function montarDadosRelatorio(){
+
+  const campos = [
+    ["Imóvel", obterValor("imovel")],
+    ["Município", obterValor("municipio")],
+    ["Estado", obterValor("estado")],
+    ["Área", obterValor("area") ? obterValor("area")+" hectares" : ""],
+    ["CAR", obterValor("car")],
+    ["Matrícula", obterValor("matricula")],
+    ["Valor do lance", obterValor("lance") ? Number(obterValor("lance")).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}) : ""]
+  ];
+
+  const data = new Date().toLocaleDateString("pt-BR");
+
+  let html = `
+    <h3>LANCE RURAL IA — Relatório de análise</h3>
+    <p><strong>Data da análise:</strong> ${data}</p>
+  `;
+
+  campos.forEach(([nome,valor])=>{
+    if(valor){
+      const linha=document.createElement("p");
+      const titulo=document.createElement("strong");
+      titulo.textContent=nome+": ";
+      linha.appendChild(titulo);
+      linha.appendChild(document.createTextNode(valor));
+      html += linha.outerHTML;
+    }
+  });
+
+  document.getElementById("dadosRelatorio").innerHTML=html;
+}
+
 async function analisarImovel(){
 
   const botao=document.getElementById("analisar");
   const status=document.getElementById("status");
   const resultado=document.getElementById("resultado");
+  const botaoPdf=document.getElementById("baixarPdf");
   const arquivo=document.getElementById("edital").files[0];
 
-  if(!arquivo && !document.getElementById("texto").value.trim()){
+  if(!arquivo && !obterValor("texto")){
     alert("Selecione um edital PDF ou preencha as observações.");
     return;
   }
@@ -324,7 +389,7 @@ async function analisarImovel(){
     "lance",
     "texto"
   ].forEach(id=>{
-    dados.append(id,document.getElementById(id).value);
+    dados.append(id,obterValor(id));
   });
 
   if(arquivo){
@@ -332,8 +397,8 @@ async function analisarImovel(){
   }
 
   botao.disabled=true;
-
-  document.getElementById("baixarPdf").style.display="none";
+  botaoPdf.style.display="none";
+  analiseConcluida=false;
 
   status.textContent="A IA está examinando os dados. Aguarde...";
   resultado.textContent="Análise em andamento...";
@@ -351,15 +416,19 @@ async function analisarImovel(){
       throw new Error(json.erro || "Falha na análise.");
     }
 
-    if(!json.analise){
-      throw new Error("O servidor não retornou o relatório.");
+    if(!json.analise || typeof json.analise!=="string"){
+      throw new Error("O servidor não retornou um relatório válido.");
     }
 
     resultado.textContent=json.analise;
 
-    status.textContent="Análise concluída.";
+    montarDadosRelatorio();
 
-    document.getElementById("baixarPdf").style.display="inline-block";
+    analiseConcluida=true;
+
+    status.textContent="Análise concluída com sucesso.";
+
+    botaoPdf.style.display="inline-block";
 
   }catch(erro){
 
@@ -379,15 +448,12 @@ function gerarPDF(){
   const resultado=document.getElementById("resultado");
   const texto=resultado.textContent.trim();
 
-  if(
-    !texto ||
-    texto.includes("Aguardando o cadastro") ||
-    texto.includes("Análise em andamento") ||
-    texto.startsWith("Não foi possível concluir:")
-  ){
+  if(!analiseConcluida || !texto){
     alert("Primeiro realize uma análise completa.");
     return;
   }
+
+  montarDadosRelatorio();
 
   window.print();
 

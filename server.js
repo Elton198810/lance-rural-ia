@@ -42,6 +42,65 @@ app.get("/vendas.html", (req, res) => {
   res.sendFile(path.join(__dirname, "vendas.html"));
 });
 
+
+// CONFIGURAÇÃO PÚBLICA DO SUPABASE (a chave publishable pode ser exposta no navegador)
+app.get("/api/config", (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(503).json({ erro: "Autenticação ainda não configurada." });
+  }
+  res.set("Cache-Control", "no-store");
+  return res.json({ supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY });
+});
+
+// Valida a sessão e o plano antes de permitir uma análise.
+async function validarAcesso(req) {
+  const autorizacao = req.headers.authorization || "";
+  const token = autorizacao.startsWith("Bearer ") ? autorizacao.slice(7) : "";
+  if (!token) return { erro: "Faça login para utilizar a plataforma.", status: 401 };
+
+  const { data: usuarioData, error: erroAuth } = await supabase.auth.getUser(token);
+  if (erroAuth || !usuarioData?.user) {
+    return { erro: "Sua sessão expirou. Entre novamente.", status: 401 };
+  }
+  if (!supabaseAdmin) {
+    return { erro: "A autenticação administrativa não está configurada.", status: 503 };
+  }
+
+  const { data: assinatura, error: erroAssinatura } = await supabaseAdmin
+    .from("subscriptions")
+    .select("plan,status,analyses_limit,period_start,period_end")
+    .eq("user_id", usuarioData.user.id)
+    .maybeSingle();
+
+  if (erroAssinatura) throw erroAssinatura;
+  if (!assinatura || assinatura.status !== "active") {
+    return { erro: "Não encontramos uma assinatura ativa. Escolha um plano para continuar.", status: 403 };
+  }
+
+  const agora = new Date();
+  const inicio = assinatura.period_start
+    ? new Date(assinatura.period_start)
+    : new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const fim = assinatura.period_end ? new Date(assinatura.period_end) : null;
+  if (fim && fim <= agora) {
+    return { erro: "Sua assinatura está vencida. Renove o plano para continuar.", status: 403 };
+  }
+
+  const { count, error: erroContagem } = await supabaseAdmin
+    .from("analysis_usage")
+    .select("user_id", { count: "exact", head: true })
+    .eq("user_id", usuarioData.user.id)
+    .gte("created_at", inicio.toISOString());
+
+  if (erroContagem) throw erroContagem;
+  const limite = Number(assinatura.analyses_limit || 0);
+  if (limite < 1 || (count || 0) >= limite) {
+    return { erro: "Você atingiu o limite de análises do seu plano neste período.", status: 403 };
+  }
+
+  return { user: usuarioData.user };
+}
+
 // STATUS DO SERVIDOR
 app.get("/api/status", (req, res) => {
   res.json({
@@ -152,6 +211,10 @@ async function extrairTextoPDF(buffer) {
 // ANÁLISE DOCUMENTAL COM GROQ
 app.post("/api/analyze", upload.single("edital"), async (req, res) => {
   try {
+    if (!supabase) return res.status(503).json({ erro: "Autenticação indisponível no momento." });
+    const acesso = await validarAcesso(req);
+    if (acesso.erro) return res.status(acesso.status).json({ erro: acesso.erro });
+
     if (!GROQ_API_KEY) {
       return res.status(500).json({
         erro: "Chave GROQ_API_KEY não encontrada no ambiente."
@@ -276,6 +339,14 @@ Responda em português brasileiro.
       return res.status(502).json({
         erro: "A IA não retornou uma análise."
       });
+    }
+
+    const { error: erroRegistro } = await supabaseAdmin
+      .from("analysis_usage")
+      .insert({ user_id: acesso.user.id, property_name: imovel || "Imóvel sem identificação" });
+    if (erroRegistro) {
+      console.error("Erro ao registrar uso da análise:", erroRegistro.message);
+      return res.status(500).json({ erro: "A análise foi gerada, mas não foi possível registrar o consumo. Contate o suporte." });
     }
 
     return res.json({ sucesso: true, analise });

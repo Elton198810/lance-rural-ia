@@ -4,10 +4,11 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ verify: (req, res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
 
 const PORTA = process.env.PORT || 3000;
 
@@ -361,19 +362,27 @@ Responda em português brasileiro.
 });
 
 // WEBHOOK DA KIWIFY
-// A Kiwify envia o token configurado como parâmetro ?token= na URL do webhook.
+// A Kiwify usa o token como chave HMAC-SHA1 e envia a assinatura em ?signature=...
 app.post("/api/kiwify-webhook", async (req, res) => {
   try {
-    const tokenConfigurado = process.env.KIWIFY_WEBHOOK_TOKEN;
-    const tokenRecebido = String(req.query.token || "");
+    const segredo = process.env.KIWIFY_WEBHOOK_TOKEN;
+    const assinaturaRecebida = String(req.query.signature || "").trim().toLowerCase();
 
-    if (!tokenConfigurado) {
-      console.error("Webhook Kiwify bloqueado: KIWIFY_WEBHOOK_TOKEN não configurado.");
+    if (!segredo) {
+      console.error("Webhook Kiwify: KIWIFY_WEBHOOK_TOKEN não configurado.");
       return res.status(503).json({ recebido: false, erro: "Webhook ainda não configurado." });
     }
 
-    if (!tokenRecebido || tokenRecebido !== tokenConfigurado) {
-      return res.status(401).json({ recebido: false, erro: "Não autorizado." });
+    if (!req.rawBody || !assinaturaRecebida) {
+      return res.status(401).json({ recebido: false, erro: "Assinatura ausente." });
+    }
+
+    const assinaturaEsperada = crypto.createHmac("sha1", segredo).update(req.rawBody).digest("hex");
+    const recebido = Buffer.from(assinaturaRecebida, "hex");
+    const esperado = Buffer.from(assinaturaEsperada, "hex");
+    if (recebido.length !== esperado.length || !crypto.timingSafeEqual(recebido, esperado)) {
+      console.warn("Webhook Kiwify recusado: assinatura inválida.");
+      return res.status(401).json({ recebido: false, erro: "Assinatura inválida." });
     }
 
     const evento = req.body;
@@ -401,48 +410,27 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     const produtoId = String(evento.Product?.product_id || "");
 
     if (!pedido || !email) {
-      console.error("Webhook Kiwify recebido sem order_id ou e-mail do comprador.");
       return res.status(400).json({ recebido: false, erro: "Pedido ou e-mail do comprador ausente." });
     }
 
-    const eventoEstorno = statusPedido.includes("refund") ||
-      statusPedido.includes("chargeback") ||
-      tipoEvento.includes("refund") ||
-      tipoEvento.includes("chargeback") ||
-      tipoEvento.includes("charged_back");
-
-    const eventoCancelamento = statusPedido.includes("cancel") ||
-      tipoEvento.includes("cancel");
-
-    const eventoAprovado = statusPedido === "paid" ||
-      statusPedido === "approved" ||
-      tipoEvento === "order_approved" ||
-      tipoEvento === "subscription_renewed";
-
-    const eventoAtrasado = statusPedido.includes("late") ||
-      tipoEvento.includes("late") ||
-      tipoEvento.includes("overdue");
+    const eventoEstorno = statusPedido.includes("refund") || statusPedido.includes("chargeback") ||
+      tipoEvento.includes("refund") || tipoEvento.includes("chargeback") || tipoEvento.includes("charged_back");
+    const eventoCancelamento = statusPedido.includes("cancel") || tipoEvento.includes("cancel");
+    const eventoAprovado = statusPedido === "paid" || statusPedido === "approved" ||
+      tipoEvento === "order_approved" || tipoEvento === "subscription_renewed";
+    const eventoAtrasado = statusPedido.includes("late") || tipoEvento.includes("late") || tipoEvento.includes("overdue");
 
     if (!eventoEstorno && !eventoCancelamento && !eventoAprovado && !eventoAtrasado) {
-      return res.status(200).json({
-        recebido: true,
-        mensagem: "Evento recebido; nenhum acesso foi alterado."
-      });
+      return res.status(200).json({ recebido: true, mensagem: "Evento recebido; nenhum acesso foi alterado." });
     }
 
     let usuario = null;
     for (let pagina = 1; pagina <= 10; pagina++) {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-        page: pagina,
-        perPage: 1000
-      });
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: pagina, perPage: 1000 });
       if (error) throw error;
-      usuario = (data.users || []).find(
-        u => String(u.email || "").toLowerCase() === email
-      ) || null;
+      usuario = (data.users || []).find(u => String(u.email || "").toLowerCase() === email) || null;
       if (usuario || !data.users || data.users.length < 1000) break;
     }
-
     if (!usuario) {
       return res.status(409).json({
         recebido: false,
@@ -455,13 +443,8 @@ app.post("/api/kiwify-webhook", async (req, res) => {
       (process.env.KIWIFY_PREMIUM_PRODUCT_ID && produtoId === process.env.KIWIFY_PREMIUM_PRODUCT_ID);
     const essencial = nomeProduto.includes("essencial") ||
       (process.env.KIWIFY_ESSENCIAL_PRODUCT_ID && produtoId === process.env.KIWIFY_ESSENCIAL_PRODUCT_ID);
-
     if (!premium && !essencial) {
-      return res.status(200).json({
-        recebido: true,
-        assinatura_atualizada: false,
-        mensagem: "Evento recebido, mas o produto ainda não foi mapeado."
-      });
+      return res.status(200).json({ recebido: true, assinatura_atualizada: false, mensagem: "Produto ainda não mapeado." });
     }
 
     const plano = premium ? "Premium" : "Essencial";
@@ -471,42 +454,26 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     const fimPeriodo = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const { data: assinaturaAtual, error: erroBusca } = await supabaseAdmin
-      .from("subscriptions")
-      .select("user_id,last_transaction_id")
-      .eq("user_id", usuario.id)
-      .maybeSingle();
+      .from("subscriptions").select("user_id,last_transaction_id").eq("user_id", usuario.id).maybeSingle();
     if (erroBusca) throw erroBusca;
-
     if (assinaturaAtual?.last_transaction_id === pedido && !acessoRevogado) {
-      return res.status(200).json({
-        recebido: true,
-        assinatura_atualizada: false,
-        mensagem: "Este pedido já foi processado."
-      });
+      return res.status(200).json({ recebido: true, assinatura_atualizada: false, mensagem: "Pedido já processado." });
     }
 
     const dadosAssinatura = {
-      user_id: usuario.id,
-      plan: plano,
+      user_id: usuario.id, plan: plano,
       status: acessoRevogado ? (eventoAtrasado ? "past_due" : "canceled") : "active",
-      analyses_limit: limite,
-      period_start: agora.toISOString(),
+      analyses_limit: limite, period_start: agora.toISOString(),
       period_end: acessoRevogado ? agora.toISOString() : fimPeriodo.toISOString(),
-      provider: "kiwify",
-      last_transaction_id: pedido
+      provider: "kiwify", last_transaction_id: pedido
     };
-
     const resultado = assinaturaAtual
       ? await supabaseAdmin.from("subscriptions").update(dadosAssinatura).eq("user_id", usuario.id)
       : await supabaseAdmin.from("subscriptions").insert(dadosAssinatura);
     if (resultado.error) throw resultado.error;
 
-    console.log("Webhook Kiwify processado:", {
-      pedido, plano, status: dadosAssinatura.status, evento: tipoEvento
-    });
-    return res.status(200).json({
-      recebido: true, assinatura_atualizada: true, plano, status: dadosAssinatura.status
-    });
+    console.log("Webhook Kiwify processado:", { pedido, plano, status: dadosAssinatura.status, evento: tipoEvento });
+    return res.status(200).json({ recebido: true, assinatura_atualizada: true, plano, status: dadosAssinatura.status });
   } catch (erro) {
     console.error("ERRO WEBHOOK KIWIFY:", erro?.message || erro);
     return res.status(500).json({ recebido: false, erro: "Falha ao processar webhook." });

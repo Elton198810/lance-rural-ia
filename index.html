@@ -98,6 +98,15 @@ button:disabled{
 }
 
 #acesso input{margin-bottom:10px}
+#planos{display:none}
+.planos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.plano-card{background:#101b17;border:1px solid #506858;border-radius:12px;padding:18px}
+.plano-card h3{color:#b6dba9;margin:0 0 8px}
+.plano-preco{font-size:27px;font-weight:bold;margin:12px 0}
+.plano-card a{display:block;text-align:center;text-decoration:none;border-radius:8px;padding:13px;background:#79ad69;color:#102016;font-weight:bold}
+#estadoPlano{color:#b6dba9;font-size:14px}
+@media(max-width:650px){.planos-grid{grid-template-columns:1fr}}
+
 #acesso .linha-acesso{display:flex;gap:10px;flex-wrap:wrap}
 #acesso .linha-acesso button{flex:1}
 #acesso .mensagem-acesso{font-size:13px;color:#b6dba9;min-height:20px}
@@ -267,6 +276,26 @@ footer{
   <p class="mensagem-acesso" id="mensagemAcesso"></p>
 </section>
 
+<section class="card" id="planos">
+  <h2>Escolha seu plano para continuar</h2>
+  <p>Seu cadastro está pronto. Escolha uma assinatura para liberar as análises.</p>
+  <div class="planos-grid">
+    <div class="plano-card">
+      <h3>Plano Essencial</h3>
+      <div class="plano-preco">R$ 97/mês</div>
+      <p>Até 10 análises por mês.</p>
+      <a href="https://pay.kiwify.com.br/TodjscR" target="_blank" rel="noopener">CONTRATAR ESSENCIAL</a>
+    </div>
+    <div class="plano-card">
+      <h3>Plano Premium</h3>
+      <div class="plano-preco">R$ 197/mês</div>
+      <p>Até 30 análises por mês.</p>
+      <a href="https://pay.kiwify.com.br/Es4tOsi" target="_blank" rel="noopener">CONTRATAR PREMIUM</a>
+    </div>
+  </div>
+  <p id="estadoPlano">Entre na sua conta para consultar seu plano.</p>
+</section>
+
 <section class="card" id="cadastro">
   <h2>Cadastro da propriedade</h2>
 
@@ -382,7 +411,7 @@ async function criarConta(){
     const r=await fetch(configSupabase.supabaseUrl+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":configSupabase.supabaseKey},body:JSON.stringify({email,password})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "Não foi possível criar a conta.");
-    if(d.access_token){sessionStorage.setItem("lance_rural_token",d.access_token);mensagemAcesso("Conta criada. Contrate um plano usando este mesmo e-mail.");}
+    if(d.access_token){sessionStorage.setItem("lance_rural_token",d.access_token);mensagemAcesso("Conta criada com sucesso.");await atualizarPlano();}
     else mensagemAcesso("Cadastro recebido. Confirme seu e-mail e depois faça login.");
   }catch(e){mensagemAcesso(e.message);}
 }
@@ -396,11 +425,36 @@ async function entrarConta(){
     const d=await r.json();
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "E-mail ou senha inválidos.");
     sessionStorage.setItem("lance_rural_token",d.access_token);
-    mensagemAcesso("Login realizado. O plano será conferido ao solicitar uma análise.");
+    mensagemAcesso("Login realizado com sucesso.");
+    await atualizarPlano();
   }catch(e){mensagemAcesso(e.message);}
 }
-function sairConta(){sessionStorage.removeItem("lance_rural_token");mensagemAcesso("Você saiu da sua conta.");}
-carregarConfigSupabase();
+function sairConta(){sessionStorage.removeItem("lance_rural_token");document.getElementById("planos").style.display="none";mensagemAcesso("Você saiu da sua conta.");}
+async function atualizarPlano(){
+  const token=sessionStorage.getItem("lance_rural_token");
+  const painel=document.getElementById("planos");
+  if(!token){painel.style.display="none";return;}
+  try{
+    const r=await fetch("/api/minha-assinatura",{headers:{"Authorization":"Bearer "+token}});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.erro || "Não foi possível consultar seu plano.");
+    if(d.temAssinaturaAtiva){
+      painel.style.display="none";
+      mensagemAcesso("Plano "+d.plano+" ativo — "+d.limite+" análises por mês.");
+    }else{
+      painel.style.display="block";
+      document.getElementById("estadoPlano").textContent="Nenhuma assinatura ativa encontrada para esta conta.";
+    }
+  }catch(e){
+    painel.style.display="none";
+    mensagemAcesso(e.message);
+  }
+}
+async function iniciarSessao(){
+  await carregarConfigSupabase();
+  if(sessionStorage.getItem("lance_rural_token")) await atualizarPlano();
+}
+iniciarSessao();
 
 function obterValor(id){
   return document.getElementById(id).value.trim();

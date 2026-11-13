@@ -4,10 +4,11 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ verify: (req, res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
 
 const PORTA = process.env.PORT || 3000;
 
@@ -361,25 +362,50 @@ Responda em português brasileiro.
 });
 
 // WEBHOOK DA KIWIFY
-// Configure KIWIFY_WEBHOOK_TOKEN no Render e use o mesmo valor na URL do webhook:
-// https://lance-rural-ia.onrender.com/api/kiwify-webhook?token=SEU_TOKEN
+// A Kiwify assina o corpo bruto com HMAC-SHA1 e envia o resultado em ?signature=...
+// KIWIFY_WEBHOOK_TOKEN no Render deve ser exatamente o token gerado no painel da Kiwify.
 app.post("/api/kiwify-webhook", async (req, res) => {
   try {
-    const tokenConfigurado = process.env.KIWIFY_WEBHOOK_TOKEN;
-    const tokenRecebido = String(req.query.token || "");
+    const segredo = process.env.KIWIFY_WEBHOOK_TOKEN;
+    const assinaturaRecebida = String(req.query.signature || "").trim().toLowerCase();
 
-    if (!tokenConfigurado) {
-      console.error("Webhook Kiwify bloqueado: KIWIFY_WEBHOOK_TOKEN não configurado.");
+    if (!segredo) {
+      console.error("Webhook Kiwify: KIWIFY_WEBHOOK_TOKEN não configurado.");
       return res.status(503).json({ recebido: false, erro: "Webhook ainda não configurado." });
     }
 
-    if (!tokenRecebido || tokenRecebido !== tokenConfigurado) {
-      return res.status(401).json({ recebido: false, erro: "Não autorizado." });
+    if (!req.rawBody || !assinaturaRecebida) {
+      return res.status(401).json({ recebido: false, erro: "Assinatura ausente." });
+    }
+
+    const assinaturaEsperada = crypto
+      .createHmac("sha1", segredo)
+      .update(req.rawBody)
+      .digest("hex");
+
+    const recebido = Buffer.from(assinaturaRecebida, "hex");
+    const esperado = Buffer.from(assinaturaEsperada, "hex");
+
+    if (
+      recebido.length !== esperado.length ||
+      !crypto.timingSafeEqual(recebido, esperado)
+    ) {
+      console.warn("Webhook Kiwify recusado: assinatura inválida.");
+      return res.status(401).json({ recebido: false, erro: "Assinatura inválida." });
     }
 
     const evento = req.body;
     if (!evento || typeof evento !== "object" || Array.isArray(evento)) {
       return res.status(400).json({ recebido: false, erro: "Dados inválidos." });
+    }
+
+    // O botão de teste da Kiwify usa dados fictícios. Confirmamos o recebimento,
+    // mas nunca criamos/alteramos uma assinatura com dados de demonstração.
+    const emailTeste = String(evento.Customer?.email || "").toLowerCase();
+    const produtoTeste = String(evento.Product?.product_name || "").toLowerCase();
+    if (emailTeste.endsWith("@example.com") || produtoTeste.includes("example product")) {
+      console.log("Webhook Kiwify: evento de teste recebido; nenhuma assinatura alterada.");
+      return res.status(200).json({ recebido: true, teste: true });
     }
 
     if (!supabaseAdmin) {
@@ -402,7 +428,8 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     const eventoEstorno = statusPedido.includes("refund") ||
       statusPedido.includes("chargeback") ||
       tipoEvento.includes("refund") ||
-      tipoEvento.includes("chargeback");
+      tipoEvento.includes("chargeback") ||
+      tipoEvento.includes("charged_back");
 
     const eventoCancelamento = statusPedido.includes("cancel") ||
       tipoEvento.includes("cancel");
@@ -440,7 +467,6 @@ app.post("/api/kiwify-webhook", async (req, res) => {
 
     if (!usuario) {
       console.error("Webhook Kiwify: conta ainda não encontrada para pedido", pedido);
-      // Retorna erro para permitir reenvio do webhook após o comprador criar a conta.
       return res.status(409).json({
         recebido: false,
         erro: "Conta não encontrada. O comprador deve criar a conta com o mesmo e-mail da compra; depois reenvie o webhook."
@@ -456,9 +482,10 @@ app.post("/api/kiwify-webhook", async (req, res) => {
 
     if (!premium && !essencial) {
       console.error("Webhook Kiwify: produto não reconhecido. ID:", produtoId, "Nome:", produto);
-      return res.status(422).json({
-        recebido: false,
-        erro: "Produto não reconhecido. Confira o nome do produto ou configure o ID no Render."
+      return res.status(200).json({
+        recebido: true,
+        assinatura_atualizada: false,
+        mensagem: "Evento recebido, mas o produto ainda não foi mapeado."
       });
     }
 
@@ -476,7 +503,6 @@ app.post("/api/kiwify-webhook", async (req, res) => {
 
     if (erroBusca) throw erroBusca;
 
-    // Eventos repetidos do mesmo pedido não reiniciam nem estendem o período.
     if (assinaturaAtual?.last_transaction_id === pedido && !acessoRevogado) {
       return res.status(200).json({
         recebido: true,

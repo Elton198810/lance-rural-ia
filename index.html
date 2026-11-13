@@ -111,6 +111,24 @@ button:disabled{
   overflow-wrap:anywhere;
 }
 
+#resultado h1,#resultado h2,#resultado h3,#resultado h4{
+  color:#b6dba9;
+  line-height:1.3;
+  margin:22px 0 10px;
+}
+#resultado h1{font-size:1.45rem}
+#resultado h2{font-size:1.25rem}
+#resultado h3{font-size:1.1rem}
+#resultado p{margin:9px 0}
+#resultado ul{padding-left:24px;margin:10px 0}
+#resultado li{margin:5px 0}
+#resultado hr{border:0;border-top:1px solid #506858;margin:18px 0}
+#resultado table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.94rem}
+#resultado th,#resultado td{border:1px solid #506858;padding:9px;text-align:left;vertical-align:top}
+#resultado th{background:#263c2e;color:#c9e4bd}
+#resultado code{background:#263c2e;padding:2px 5px;border-radius:4px}
+
+
 .status{
   color:#b6dba9;
   font-size:13px;
@@ -210,12 +228,16 @@ footer{
     padding:0!important;
     min-height:0!important;
     border-radius:0!important;
-    white-space:pre-wrap;
+    white-space:normal;
     overflow:visible!important;
     overflow-wrap:anywhere;
     font-size:10.5pt;
     line-height:1.55;
   }
+  #resultado h1,#resultado h2,#resultado h3,#resultado h4{color:#234b32!important;page-break-after:avoid}
+  #resultado table{border-collapse:collapse;width:100%;font-size:9.5pt}
+  #resultado th,#resultado td{border:1px solid #999;padding:6px;color:#222!important}
+  #resultado th{background:#eee!important}
 }
 </style>
 </head>

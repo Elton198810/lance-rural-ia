@@ -98,6 +98,12 @@ button:disabled{
 }
 
 #acesso input{margin-bottom:10px}
+.auth-choice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.auth-choice button{width:100%;margin:0}
+.auth-form{display:none;margin-top:18px;padding-top:16px;border-top:1px solid #36513e}
+.auth-form .field{margin-bottom:12px}
+.auth-back{background:transparent;color:#c6d6c9;border:1px solid #506858}
+.area-protegida{display:none}
 #planos{display:none}
 .planos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .plano-card{background:#101b17;border:1px solid #506858;border-radius:12px;padding:18px}
@@ -262,18 +268,35 @@ footer{
 <main>
 
 <section class="card" id="acesso">
-  <h2>Acesse sua conta</h2>
-  <p class="status">Crie sua conta antes de contratar um plano. Use o mesmo e-mail na Kiwify.</p>
-  <div class="grid">
-    <div class="field"><label>E-mail</label><input id="emailAcesso" type="email" autocomplete="email" placeholder="seu@email.com"></div>
-    <div class="field"><label>Senha (mínimo de 6 caracteres)</label><input id="senhaAcesso" type="password" autocomplete="current-password" placeholder="Sua senha"></div>
+  <div id="inicioConta">
+    <h2>Bem-vindo ao LANCE RURAL IA</h2>
+    <p class="status">Entre na sua conta ou crie seu cadastro para escolher um plano e começar.</p>
+    <div class="auth-choice">
+      <button type="button" onclick="mostrarCadastro()">CRIAR MINHA CONTA</button>
+      <button type="button" class="auth-back" onclick="mostrarLogin()">JÁ TENHO CONTA — ENTRAR</button>
+    </div>
   </div>
-  <div class="linha-acesso">
-    <button type="button" onclick="criarConta()">CRIAR CONTA</button>
+  <div class="auth-form" id="formCadastro">
+    <h2>Crie sua conta</h2>
+    <p class="status">Preencha seus dados. Use o mesmo e-mail na hora de contratar pela Kiwify.</p>
+    <div class="field"><label>Nome completo</label><input id="nomeConta" type="text" autocomplete="name" placeholder="Seu nome completo"></div>
+    <div class="field"><label>E-mail</label><input id="emailCadastro" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+    <div class="grid">
+      <div class="field"><label>Crie uma senha (mínimo de 6 caracteres)</label><input id="senhaCadastro" type="password" autocomplete="new-password" placeholder="Crie uma senha"></div>
+      <div class="field"><label>Confirme sua senha</label><input id="confirmarSenha" type="password" autocomplete="new-password" placeholder="Digite a senha novamente"></div>
+    </div>
+    <button type="button" onclick="criarConta()">CRIAR MINHA CONTA</button>
+    <button type="button" class="auth-back" onclick="mostrarInicio()">VOLTAR</button>
+  </div>
+  <div class="auth-form" id="formLogin">
+    <h2>Entre na sua conta</h2>
+    <div class="field"><label>E-mail</label><input id="emailLogin" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+    <div class="field"><label>Senha</label><input id="senhaLogin" type="password" autocomplete="current-password" placeholder="Sua senha"></div>
     <button type="button" onclick="entrarConta()">ENTRAR</button>
-    <button type="button" onclick="sairConta()">SAIR</button>
+    <button type="button" class="auth-back" onclick="mostrarInicio()">VOLTAR</button>
   </div>
   <p class="mensagem-acesso" id="mensagemAcesso"></p>
+  <button id="botaoSair" type="button" class="auth-back" style="display:none" onclick="sairConta()">SAIR DA CONTA</button>
 </section>
 
 <section class="card" id="planos">
@@ -296,7 +319,7 @@ footer{
   <p id="estadoPlano">Entre na sua conta para consultar seu plano.</p>
 </section>
 
-<section class="card" id="cadastro">
+<section class="card area-protegida" id="cadastro">
   <h2>Cadastro da propriedade</h2>
 
   <div class="grid">
@@ -339,7 +362,7 @@ footer{
   </div>
 </section>
 
-<section class="card" id="documentos">
+<section class="card area-protegida" id="documentos">
   <h2>Documentos do leilão</h2>
 
   <div class="field">
@@ -402,22 +425,53 @@ async function carregarConfigSupabase(){
   }catch(e){mensagemAcesso(e.message);}
 }
 function mensagemAcesso(texto){document.getElementById("mensagemAcesso").textContent=texto;}
+function mostrarInicio(){
+  document.getElementById("inicioConta").style.display="block";
+  document.getElementById("formCadastro").style.display="none";
+  document.getElementById("formLogin").style.display="none";
+  mensagemAcesso("");
+}
+function mostrarCadastro(){
+  document.getElementById("inicioConta").style.display="none";
+  document.getElementById("formCadastro").style.display="block";
+  document.getElementById("formLogin").style.display="none";
+  mensagemAcesso("");
+}
+function mostrarLogin(){
+  document.getElementById("inicioConta").style.display="none";
+  document.getElementById("formCadastro").style.display="none";
+  document.getElementById("formLogin").style.display="block";
+  mensagemAcesso("");
+}
+function exibirAreaProtegida(visivel){
+  document.querySelectorAll(".area-protegida").forEach(el=>el.style.display=visivel?"block":"none");
+}
 async function criarConta(){
-  const email=obterValor("emailAcesso").toLowerCase();
-  const password=document.getElementById("senhaAcesso").value;
-  if(!email || password.length<6){mensagemAcesso("Informe um e-mail válido e uma senha com pelo menos 6 caracteres.");return;}
+  const nome=obterValor("nomeConta");
+  const email=obterValor("emailCadastro").toLowerCase();
+  const password=document.getElementById("senhaCadastro").value;
+  const confirmar=document.getElementById("confirmarSenha").value;
+  if(!nome || !email || password.length<6){mensagemAcesso("Preencha seu nome, um e-mail válido e uma senha com pelo menos 6 caracteres.");return;}
+  if(password!==confirmar){mensagemAcesso("As senhas não são iguais. Confira e tente novamente.");return;}
   try{
     if(!configSupabase) await carregarConfigSupabase();
-    const r=await fetch(configSupabase.supabaseUrl+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":configSupabase.supabaseKey},body:JSON.stringify({email,password})});
+    const r=await fetch(configSupabase.supabaseUrl+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":configSupabase.supabaseKey},body:JSON.stringify({email,password,data:{full_name:nome}})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "Não foi possível criar a conta.");
-    if(d.access_token){sessionStorage.setItem("lance_rural_token",d.access_token);mensagemAcesso("Conta criada com sucesso.");await atualizarPlano();}
-    else mensagemAcesso("Cadastro recebido. Confirme seu e-mail e depois faça login.");
+    if(d.access_token){
+      sessionStorage.setItem("lance_rural_token",d.access_token);
+      document.getElementById("botaoSair").style.display="inline-block";
+      mensagemAcesso("Conta criada com sucesso.");
+      await atualizarPlano();
+    }else{
+      mensagemAcesso("Cadastro recebido. Faça login para continuar.");
+      mostrarLogin();
+    }
   }catch(e){mensagemAcesso(e.message);}
 }
 async function entrarConta(){
-  const email=obterValor("emailAcesso").toLowerCase();
-  const password=document.getElementById("senhaAcesso").value;
+  const email=obterValor("emailLogin").toLowerCase();
+  const password=document.getElementById("senhaLogin").value;
   if(!email || !password){mensagemAcesso("Informe e-mail e senha.");return;}
   try{
     if(!configSupabase) await carregarConfigSupabase();
@@ -425,37 +479,44 @@ async function entrarConta(){
     const d=await r.json();
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "E-mail ou senha inválidos.");
     sessionStorage.setItem("lance_rural_token",d.access_token);
+    document.getElementById("botaoSair").style.display="inline-block";
     mensagemAcesso("Login realizado com sucesso.");
     await atualizarPlano();
   }catch(e){mensagemAcesso(e.message);}
 }
-function sairConta(){sessionStorage.removeItem("lance_rural_token");document.getElementById("planos").style.display="none";mensagemAcesso("Você saiu da sua conta.");}
+function sairConta(){
+  sessionStorage.removeItem("lance_rural_token");
+  document.getElementById("planos").style.display="none";
+  document.getElementById("botaoSair").style.display="none";
+  exibirAreaProtegida(false);
+  mostrarInicio();
+  mensagemAcesso("Você saiu da sua conta.");
+}
 async function atualizarPlano(){
   const token=sessionStorage.getItem("lance_rural_token");
   const painel=document.getElementById("planos");
-  if(!token){painel.style.display="none";return;}
+  if(!token){painel.style.display="none";exibirAreaProtegida(false);return;}
   try{
     const r=await fetch("/api/minha-assinatura",{headers:{"Authorization":"Bearer "+token}});
     const d=await r.json();
     if(!r.ok) throw new Error(d.erro || "Não foi possível consultar seu plano.");
     if(d.temAssinaturaAtiva){
       painel.style.display="none";
+      exibirAreaProtegida(true);
+      document.getElementById("botaoSair").style.display="inline-block";
       mensagemAcesso("Plano "+d.plano+" ativo — "+d.limite+" análises por mês.");
     }else{
+      exibirAreaProtegida(false);
       painel.style.display="block";
+      document.getElementById("botaoSair").style.display="inline-block";
       document.getElementById("estadoPlano").textContent="Nenhuma assinatura ativa encontrada para esta conta.";
     }
   }catch(e){
     painel.style.display="none";
+    exibirAreaProtegida(false);
     mensagemAcesso(e.message);
   }
 }
-async function iniciarSessao(){
-  await carregarConfigSupabase();
-  if(sessionStorage.getItem("lance_rural_token")) await atualizarPlano();
-}
-iniciarSessao();
-
 function obterValor(id){
   return document.getElementById(id).value.trim();
 }

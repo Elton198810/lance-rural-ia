@@ -361,7 +361,7 @@ Responda em português brasileiro.
 });
 
 // WEBHOOK DA KIWIFY
-// Configure KIWIFFY_WEBHOOK_TOKEN no Render e use o mesmo valor na URL do webhook:
+// Configure KIWIFY_WEBHOOK_TOKEN no Render e use o mesmo valor na URL do webhook:
 // https://lance-rural-ia.onrender.com/api/kiwify-webhook?token=SEU_TOKEN
 app.post("/api/kiwify-webhook", async (req, res) => {
   try {
@@ -369,7 +369,7 @@ app.post("/api/kiwify-webhook", async (req, res) => {
     const tokenRecebido = String(req.query.token || "");
 
     if (!tokenConfigurado) {
-      console.error("Webhook Kiwify bloqueado: KIWIFFY_WEBHOOK_TOKEN não configurado.");
+      console.error("Webhook Kiwify bloqueado: KIWIFY_WEBHOOK_TOKEN não configurado.");
       return res.status(503).json({ recebido: false, erro: "Webhook ainda não configurado." });
     }
 

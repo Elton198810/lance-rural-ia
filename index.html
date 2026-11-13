@@ -97,6 +97,10 @@ button:disabled{
   cursor:wait;
 }
 
+#acesso input{margin-bottom:10px}
+#acesso .linha-acesso{display:flex;gap:10px;flex-wrap:wrap}
+#acesso .linha-acesso button{flex:1}
+#acesso .mensagem-acesso{font-size:13px;color:#b6dba9;min-height:20px}
 #resultado{
   white-space:pre-wrap;
   line-height:1.6;
@@ -225,6 +229,21 @@ footer{
 
 <main>
 
+<section class="card" id="acesso">
+  <h2>Acesse sua conta</h2>
+  <p class="status">Crie sua conta antes de contratar um plano. Use o mesmo e-mail na Kiwify.</p>
+  <div class="grid">
+    <div class="field"><label>E-mail</label><input id="emailAcesso" type="email" autocomplete="email" placeholder="seu@email.com"></div>
+    <div class="field"><label>Senha (mínimo de 6 caracteres)</label><input id="senhaAcesso" type="password" autocomplete="current-password" placeholder="Sua senha"></div>
+  </div>
+  <div class="linha-acesso">
+    <button type="button" onclick="criarConta()">CRIAR CONTA</button>
+    <button type="button" onclick="entrarConta()">ENTRAR</button>
+    <button type="button" onclick="sairConta()">SAIR</button>
+  </div>
+  <p class="mensagem-acesso" id="mensagemAcesso"></p>
+</section>
+
 <section class="card" id="cadastro">
   <h2>Cadastro da propriedade</h2>
 
@@ -321,6 +340,44 @@ footer{
 <script>
 
 let analiseConcluida = false;
+let configSupabase = null;
+
+async function carregarConfigSupabase(){
+  try{
+    const r=await fetch("/api/config");
+    if(!r.ok) throw new Error("Configuração de acesso indisponível.");
+    configSupabase=await r.json();
+  }catch(e){mensagemAcesso(e.message);}
+}
+function mensagemAcesso(texto){document.getElementById("mensagemAcesso").textContent=texto;}
+async function criarConta(){
+  const email=obterValor("emailAcesso").toLowerCase();
+  const password=document.getElementById("senhaAcesso").value;
+  if(!email || password.length<6){mensagemAcesso("Informe um e-mail válido e uma senha com pelo menos 6 caracteres.");return;}
+  try{
+    if(!configSupabase) await carregarConfigSupabase();
+    const r=await fetch(configSupabase.supabaseUrl+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":configSupabase.supabaseKey},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "Não foi possível criar a conta.");
+    if(d.access_token){sessionStorage.setItem("lance_rural_token",d.access_token);mensagemAcesso("Conta criada. Contrate um plano usando este mesmo e-mail.");}
+    else mensagemAcesso("Cadastro recebido. Confirme seu e-mail e depois faça login.");
+  }catch(e){mensagemAcesso(e.message);}
+}
+async function entrarConta(){
+  const email=obterValor("emailAcesso").toLowerCase();
+  const password=document.getElementById("senhaAcesso").value;
+  if(!email || !password){mensagemAcesso("Informe e-mail e senha.");return;}
+  try{
+    if(!configSupabase) await carregarConfigSupabase();
+    const r=await fetch(configSupabase.supabaseUrl+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":configSupabase.supabaseKey},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "E-mail ou senha inválidos.");
+    sessionStorage.setItem("lance_rural_token",d.access_token);
+    mensagemAcesso("Login realizado. O plano será conferido ao solicitar uma análise.");
+  }catch(e){mensagemAcesso(e.message);}
+}
+function sairConta(){sessionStorage.removeItem("lance_rural_token");mensagemAcesso("Você saiu da sua conta.");}
+carregarConfigSupabase();
 
 function obterValor(id){
   return document.getElementById(id).value.trim();
@@ -405,8 +462,11 @@ async function analisarImovel(){
 
   try{
 
+    const token=sessionStorage.getItem("lance_rural_token");
+    if(!token) throw new Error("Faça login acima antes de solicitar uma análise.");
     const resposta=await fetch("/api/analyze",{
       method:"POST",
+      headers:{"Authorization":"Bearer "+token},
       body:dados
     });
 

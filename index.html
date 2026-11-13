@@ -295,6 +295,10 @@ footer{
     <button type="button" onclick="entrarConta()">ENTRAR</button>
     <button type="button" class="auth-back" onclick="mostrarInicio()">VOLTAR</button>
   </div>
+  <div id="painelConta" style="display:none">
+    <h2>Conta conectada</h2>
+    <p class="status" id="statusConta"></p>
+  </div>
   <p class="mensagem-acesso" id="mensagemAcesso"></p>
   <button id="botaoSair" type="button" class="auth-back" style="display:none" onclick="sairConta()">SAIR DA CONTA</button>
 </section>
@@ -388,7 +392,7 @@ footer{
   <p class="status" id="status"></p>
 </section>
 
-<section class="card" id="relatorio">
+<section class="card area-protegida" id="relatorio">
 
   <h2>Relatório da análise</h2>
 
@@ -429,7 +433,16 @@ function mostrarInicio(){
   document.getElementById("inicioConta").style.display="block";
   document.getElementById("formCadastro").style.display="none";
   document.getElementById("formLogin").style.display="none";
+  document.getElementById("painelConta").style.display="none";
   mensagemAcesso("");
+}
+function mostrarContaConectada(status){
+  document.getElementById("inicioConta").style.display="none";
+  document.getElementById("formCadastro").style.display="none";
+  document.getElementById("formLogin").style.display="none";
+  document.getElementById("painelConta").style.display="block";
+  document.getElementById("statusConta").textContent=status;
+  document.getElementById("botaoSair").style.display="inline-block";
 }
 function mostrarCadastro(){
   document.getElementById("inicioConta").style.display="none";
@@ -460,8 +473,7 @@ async function criarConta(){
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "Não foi possível criar a conta.");
     if(d.access_token){
       sessionStorage.setItem("lance_rural_token",d.access_token);
-      document.getElementById("botaoSair").style.display="inline-block";
-      mensagemAcesso("Conta criada com sucesso.");
+      mostrarContaConectada("Conta criada com sucesso. Consultando seu plano...");
       await atualizarPlano();
     }else{
       mensagemAcesso("Cadastro recebido. Faça login para continuar.");
@@ -479,8 +491,7 @@ async function entrarConta(){
     const d=await r.json();
     if(!r.ok) throw new Error(d.msg || d.message || d.error_description || "E-mail ou senha inválidos.");
     sessionStorage.setItem("lance_rural_token",d.access_token);
-    document.getElementById("botaoSair").style.display="inline-block";
-    mensagemAcesso("Login realizado com sucesso.");
+    mostrarContaConectada("Login realizado com sucesso. Consultando seu plano...");
     await atualizarPlano();
   }catch(e){mensagemAcesso(e.message);}
 }
@@ -488,6 +499,7 @@ function sairConta(){
   sessionStorage.removeItem("lance_rural_token");
   document.getElementById("planos").style.display="none";
   document.getElementById("botaoSair").style.display="none";
+  document.getElementById("painelConta").style.display="none";
   exibirAreaProtegida(false);
   mostrarInicio();
   mensagemAcesso("Você saiu da sua conta.");
@@ -503,12 +515,11 @@ async function atualizarPlano(){
     if(d.temAssinaturaAtiva){
       painel.style.display="none";
       exibirAreaProtegida(true);
-      document.getElementById("botaoSair").style.display="inline-block";
-      mensagemAcesso("Plano "+d.plano+" ativo — "+d.limite+" análises por mês.");
+      mostrarContaConectada("Plano "+d.plano+" ativo — "+d.limite+" análises por mês.");
     }else{
       exibirAreaProtegida(false);
       painel.style.display="block";
-      document.getElementById("botaoSair").style.display="inline-block";
+      mostrarContaConectada("Cadastro concluído. Escolha um plano abaixo para liberar as análises.");
       document.getElementById("estadoPlano").textContent="Nenhuma assinatura ativa encontrada para esta conta.";
     }
   }catch(e){

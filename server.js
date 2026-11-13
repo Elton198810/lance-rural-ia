@@ -102,6 +102,47 @@ async function validarAcesso(req) {
   return { user: usuarioData.user };
 }
 
+// CONSULTA DO PLANO DA CONTA LOGADA
+app.get("/api/minha-assinatura", async (req, res) => {
+  try {
+    const autorizacao = req.headers.authorization || "";
+    const token = autorizacao.startsWith("Bearer ") ? autorizacao.slice(7) : "";
+    if (!token) return res.status(401).json({ autenticado: false });
+
+    const { data: usuarioData, error: erroAuth } = await supabase.auth.getUser(token);
+    if (erroAuth || !usuarioData?.user) {
+      return res.status(401).json({ autenticado: false });
+    }
+    if (!supabaseAdmin) {
+      return res.status(503).json({ erro: "Consulta de assinatura indisponível." });
+    }
+
+    const { data: assinatura, error } = await supabaseAdmin
+      .from("subscriptions")
+      .select("plan,status,analyses_limit,period_end,provider")
+      .eq("user_id", usuarioData.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const ativa = Boolean(
+      assinatura &&
+      assinatura.status === "active" &&
+      (!assinatura.period_end || new Date(assinatura.period_end) > new Date())
+    );
+
+    return res.json({
+      autenticado: true,
+      temAssinaturaAtiva: ativa,
+      plano: ativa ? assinatura.plan : null,
+      limite: ativa ? assinatura.analyses_limit : null
+    });
+  } catch (erro) {
+    console.error("Erro ao consultar assinatura:", erro?.message || erro);
+    return res.status(500).json({ erro: "Não foi possível consultar seu plano." });
+  }
+});
+
 // STATUS DO SERVIDOR
 app.get("/api/status", (req, res) => {
   res.json({

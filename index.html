@@ -416,6 +416,84 @@ function montarDadosRelatorio(){
   document.getElementById("dadosRelatorio").innerHTML=html;
 }
 
+
+function escaparHTML(texto){
+  return texto.replace(/[&<>"']/g, caractere => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[caractere]);
+}
+
+function formatarInlineMarkdown(texto){
+  return texto
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g,"<em>$1</em>")
+    .replace(/`(.+?)`/g,"<code>$1</code>");
+}
+
+function renderizarMarkdown(markdown){
+  const linhas=escaparHTML(String(markdown || "")).replace(/\r/g,"").split("\n");
+  const blocos=[];
+  let paragrafo=[];
+  let listaAberta=false;
+  let tabelaAberta=false;
+
+  function fecharParagrafo(){
+    if(paragrafo.length){
+      blocos.push("<p>"+formatarInlineMarkdown(paragrafo.join(" "))+"</p>");
+      paragrafo=[];
+    }
+  }
+  function fecharLista(){
+    if(listaAberta){blocos.push("</ul>");listaAberta=false;}
+  }
+  function fecharTabela(){
+    if(tabelaAberta){blocos.push("</tbody></table>");tabelaAberta=false;}
+  }
+
+  for(let i=0;i<linhas.length;i++){
+    const linha=linhas[i].trim();
+    if(!linha){fecharParagrafo();fecharLista();fecharTabela();continue;}
+
+    if(/^\|.*\|$/.test(linha)){
+      fecharParagrafo();fecharLista();
+      const celulas=linha.split("|").slice(1,-1).map(c=>c.trim());
+      if(celulas.every(c=>/^:?-{3,}:?$/.test(c))) continue;
+      if(!tabelaAberta){
+        blocos.push("<table><tbody>");
+        tabelaAberta=true;
+        blocos.push("<tr>"+celulas.map(c=>"<th>"+formatarInlineMarkdown(c)+"</th>").join("")+"</tr>");
+      }else{
+        blocos.push("<tr>"+celulas.map(c=>"<td>"+formatarInlineMarkdown(c)+"</td>").join("")+"</tr>");
+      }
+      continue;
+    }
+    fecharTabela();
+
+    const titulo=linha.match(/^(#{1,4})\s+(.+)$/);
+    if(titulo){
+      fecharParagrafo();fecharLista();
+      const nivel=titulo[1].length;
+      blocos.push("<h"+nivel+">"+formatarInlineMarkdown(titulo[2])+"</h"+nivel+">");
+      continue;
+    }
+    if(/^[-*_]{3,}$/.test(linha)){
+      fecharParagrafo();fecharLista();blocos.push("<hr>");
+      continue;
+    }
+    const item=linha.match(/^[-*+]\s+(.+)$/);
+    if(item){
+      fecharParagrafo();
+      if(!listaAberta){blocos.push("<ul>");listaAberta=true;}
+      blocos.push("<li>"+formatarInlineMarkdown(item[1])+"</li>");
+      continue;
+    }
+    fecharLista();
+    paragrafo.push(linha.replace(/^>\s?/,""));
+  }
+  fecharParagrafo();fecharLista();fecharTabela();
+  return blocos.join("");
+}
+
 async function analisarImovel(){
 
   const botao=document.getElementById("analisar");
@@ -480,7 +558,7 @@ async function analisarImovel(){
       throw new Error("O servidor não retornou um relatório válido.");
     }
 
-    resultado.textContent=json.analise;
+    resultado.innerHTML=renderizarMarkdown(json.analise);
 
     montarDadosRelatorio();
 

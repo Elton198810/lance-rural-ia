@@ -33,6 +33,12 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
+// Arquivos públicos da apresentação (capa e imagens da página inicial)
+app.use("/assets", express.static(path.join(__dirname, "assets"), {
+  maxAge: "7d",
+  etag: true
+}));
+
 // PÁGINA INICIAL: apresentação comercial do LANCE RURAL IA
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "inicio.html"));

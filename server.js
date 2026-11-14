@@ -33,8 +33,19 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-// PÁGINA PRINCIPAL
+// Arquivos públicos da apresentação (capa e imagens da página inicial)
+app.use("/assets", express.static(path.join(__dirname, "assets"), {
+  maxAge: "7d",
+  etag: true
+}));
+
+// PÁGINA INICIAL: apresentação comercial do LANCE RURAL IA
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "inicio.html"));
+});
+
+// APLICATIVO: mantém intacta a plataforma de login e análise
+app.get("/app", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 

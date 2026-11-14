@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#092016">
+<meta name="description" content="Conheça o LANCE RURAL IA: organize editais e documentos de leilões rurais, identifique pontos de atenção e tome decisões com mais informação.">
+<title>LANCE RURAL IA | Analise antes de dar seu lance</title>
+<style>
+:root{--bg:#07170f;--panel:#10271a;--line:#31513d;--gold:#eaff8b;--text:#f5f7ef;--muted:#c2d0c4}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;line-height:1.6}
+a{color:inherit;text-decoration:none}.wrap{width:min(1160px,90%);margin:auto}
+header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff18;background:#07170fee;position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+.brand{font-weight:900;letter-spacing:.3px;font-size:20px}.brand span{color:var(--gold)}.nav{display:flex;align-items:center;gap:26px;color:#d6e0d5;font-size:14px}
+.btn{display:inline-flex;justify-content:center;align-items:center;padding:14px 22px;border-radius:9px;background:var(--gold);color:#142316;font-weight:800;box-shadow:0 8px 28px #d6ef7022;transition:.2s}.btn:hover{transform:translateY(-2px);background:#f3ffb7}
+.hero{padding:34px 0 72px;background:radial-gradient(ellipse at 50% 0%,#24452b 0%,transparent 65%)}
+.cover{overflow:hidden;border:1px solid #8ca77b66;border-radius:20px;box-shadow:0 25px 80px #0008;background:#12281a}
+.cover img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover}
+.hero-cta{text-align:center;padding:28px 18px 0}.hero-cta p{color:var(--muted);margin:0 0 18px}
+.trust{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:24px;color:#d7e4d5;font-size:13px}.trust span:before{content:"✓";color:var(--gold);font-weight:900;margin-right:7px}
+section{padding:76px 0}.eyebrow{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
+h1,h2,h3{line-height:1.15}h2{font-size:clamp(28px,4vw,42px);margin:12px 0 16px;letter-spacing:-1px}.lead{color:var(--muted);max-width:760px;font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}.tile{background:var(--panel);border:1px solid var(--line);padding:25px;border-radius:16px}.num{color:var(--gold);font-size:13px;font-weight:900}.tile h3{font-size:20px;margin:12px 0}.tile p{color:var(--muted);margin:0}
+.demo{background:#0c2115;border-block:1px solid #ffffff12}.demo-layout{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+.demo-screen{background:#101d14;border:1px solid #49624b;border-radius:18px;padding:22px;box-shadow:0 22px 60px #0005}
+.screen-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff1a;padding-bottom:14px;font-weight:800}
+.status{font-size:11px;color:var(--gold);border:1px solid #667b43;border-radius:20px;padding:5px 9px}
+.fake-file{margin:20px 0;padding:18px;border:1px dashed #688267;border-radius:12px;color:#dce8d8}
+.progress{height:7px;border-radius:10px;background:#293b2b;overflow:hidden;margin:14px 0}.progress i{display:block;width:78%;height:100%;background:var(--gold)}
+.report-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #ffffff12;color:#d4e0d3;font-size:14px}.report-row b{color:var(--gold)}
+.note{font-size:12px;color:#aebdaf;margin-top:16px}
+.plans{background:linear-gradient(180deg,#07170f,#0b2015)}.plans-head{text-align:center}.plans-head .lead{margin:0 auto}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,380px));justify-content:center;gap:22px;margin-top:38px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px}.card.featured{border:2px solid var(--gold);position:relative}
+.pill{color:var(--gold);font-size:11px;font-weight:900;letter-spacing:1px}.price{font-size:42px;font-weight:900;color:var(--gold);margin:12px 0}.price small{font-size:14px;color:var(--muted);font-weight:500}
+.card p,.card li{color:var(--muted)}.card ul{padding-left:20px;line-height:2}.card .btn{width:100%;margin-top:14px}
+.disclaimer{max-width:820px;margin:28px auto 0;text-align:center;color:#9fb09f;font-size:12px}
+.faq{max-width:820px;margin:30px auto 0}.faq details{border-bottom:1px solid #ffffff20;padding:18px 0}.faq summary{font-weight:800;cursor:pointer}.faq p{color:var(--muted)}
+footer{border-top:1px solid #ffffff18;padding:28px 0;color:#9eafa2;font-size:13px}.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(max-width:760px){.nav a:not(.btn){display:none}.hero{padding-top:18px}.cover{border-radius:12px}.cover img{aspect-ratio:1.15/1;object-position:center}.grid{grid-template-columns:1fr}.demo-layout{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.card.featured{order:-1}section{padding:56px 0}.trust{gap:10px}.trust span{font-size:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="display:flex;align-items:center;justify-content:space-between;width:100%"><a class="brand" href="/">🌱 LANCE RURAL <span>IA</span></a><nav class="nav"><a href="#como-funciona">Como funciona</a><a href="#planos">Planos</a><a class="btn" href="#planos">Conhecer planos</a></nav></div></header>
+<main>
+<section class="hero"><div class="wrap">
+<div class="cover"><img src="https://dynamic.heygen.ai/image/305429acdb57445380204405761a9c19/original.jpg" alt="Capa oficial do LANCE RURAL IA com paisagem rural ao entardecer"></div>
+<div class="hero-cta"><p>Mais clareza para investigar oportunidades de leilões rurais.</p><a class="btn" href="#planos">Quero conhecer os planos →</a>
+<div class="trust"><span>Análise de editais em PDF</span><span>Pontos de atenção organizados</span><span>Relatório preliminar</span></div></div>
+</div></section>
+<section><div class="wrap"><div class="eyebrow">Antes de tomar uma decisão</div><h2>Um edital pode esconder detalhes que merecem atenção.</h2><p class="lead">O LANCE RURAL IA ajuda você a organizar o material do leilão, encontrar informações relevantes no documento e visualizar o que precisa ser conferido antes de avançar.</p>
+<div class="grid">
+<article class="tile"><div class="num">01 · ORGANIZE</div><h3>Envie o edital em PDF</h3><p>Reúna os dados do imóvel e o documento do leilão em um só fluxo de análise.</p></article>
+<article class="tile"><div class="num">02 · ANALISE</div><h3>Identifique pontos de atenção</h3><p>A IA examina o texto enviado e destaca informações encontradas, divergências aparentes e dados ausentes.</p></article>
+<article class="tile"><div class="num">03 · INVESTIGUE</div><h3>Consulte o relatório</h3><p>Veja os pontos que merecem conferência e organize as próximas verificações.</p></article>
+</div></div></section>
+<section class="demo" id="como-funciona"><div class="wrap demo-layout"><div><div class="eyebrow">Conheça a experiência</div><h2>Simples de usar. Mais organizado para avaliar.</h2><p class="lead">Dentro da plataforma, você informa os dados do imóvel, envia o edital e recebe um relatório preliminar em português claro.</p><p class="lead">A análise ajuda a levantar perguntas importantes — não substitui matrícula atualizada, consultas oficiais, advogado, engenheiro ou outros profissionais habilitados.</p><a class="btn" href="/vendas.html">Ver planos e valores</a></div>
+<div class="demo-screen" aria-label="Demonstração ilustrativa das etapas da plataforma"><div class="screen-top"><span>🌱 LANCE RURAL IA</span><span class="status">EXEMPLO ILUSTRATIVO</span></div><div class="fake-file">📄 &nbsp; Edital do leilão.pdf<br><small style="color:#aebdaf">Documento selecionado para análise</small></div><div style="font-weight:800">Análise documental</div><div class="progress"><i></i></div><div class="report-row"><span>Resumo do imóvel e leilão</span><b>Organizado</b></div><div class="report-row"><span>Informações documentais</span><b>Revisar</b></div><div class="report-row"><span>Riscos e dados ausentes</span><b>Verificar</b></div><div class="report-row"><span>Providências antes do lance</span><b>Listadas</b></div><p class="note">Prévia visual explicativa. O resultado real depende do conteúdo e da qualidade do documento enviado.</p></div></div></section>
+<section class="plans" id="planos"><div class="wrap"><div class="plans-head"><div class="eyebrow">Escolha seu acesso</div><h2>Encontre o plano para sua rotina</h2><p class="lead">Comece a organizar suas análises de leilões rurais com a ajuda da inteligência artificial.</p></div>
+<div class="cards">
+<article class="card"><div class="pill">PARA COMEÇAR</div><h3>Essencial</h3><p>Para quem está começando a analisar oportunidades.</p><div class="price">R$ 97 <small>/mês</small></div><ul><li>Até 10 análises por mês</li><li>Envio de edital em PDF</li><li>Organização de informações</li><li>Alertas de pontos de atenção</li><li>Relatório preliminar</li></ul><a class="btn" href="https://pay.kiwify.com.br/TodjscR">Assinar Essencial</a></article>
+<article class="card featured"><div class="pill">⭐ MAIS COMPLETO</div><h3>Premium</h3><p>Para quem acompanha várias oportunidades rurais.</p><div class="price">R$ 197 <small>/mês</small></div><ul><li>Até 30 análises por mês</li><li>Envio de editais em PDF</li><li>Relatórios mais detalhados</li><li>Organização de riscos documentais</li><li>Análise financeira preliminar</li><li>Suporte prioritário</li></ul><a class="btn" href="https://pay.kiwify.com.br/Es4tOsi">Assinar Premium</a></article>
+</div><p class="disclaimer">Pagamento processado pela Kiwify. A análise é preliminar, baseada no material enviado, e não garante a ausência de riscos, a regularidade do imóvel ou o resultado de um investimento.</p></div></section>
+<section><div class="wrap"><div class="plans-head"><div class="eyebrow">Dúvidas comuns</div><h2>Antes de começar</h2></div><div class="faq">
+<details><summary>O LANCE RURAL IA garante que o imóvel é seguro?</summary><p>Não. A ferramenta aponta informações, possíveis divergências e dados ausentes no material enviado. A confirmação exige consultas oficiais e avaliação de profissionais habilitados.</p></details>
+<details><summary>Como recebo a análise?</summary><p>Após contratar e acessar a plataforma, você informa os dados do imóvel, envia o edital em PDF e solicita a análise. O sistema apresenta um relatório preliminar.</p></details>
+<details><summary>Preciso entender de tecnologia?</summary><p>Não. O fluxo foi pensado para ser direto: preencher os dados, enviar o documento e consultar o relatório.</p></details>
+<details><summary>O que acontece depois do pagamento?</summary><p>Use o mesmo e-mail da compra ao criar ou acessar sua conta na plataforma. A liberação depende da confirmação da compra e do processamento do aviso de pagamento.</p></details>
+</div></div></section>
+</main>
+<footer><div class="wrap foot"><span>© 2026 LANCE RURAL IA</span><span><a href="/vendas.html">Planos</a> · <a href="/app">Acessar plataforma</a></span></div></footer>
+</body></html>
